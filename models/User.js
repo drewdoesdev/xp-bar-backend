@@ -17,12 +17,12 @@ const UserSchema = new Schema({
   date: {
     type: Date,
     default: Date.now
-  },
-  xpLogs: [{
+  }
+  /*xpLogs: [{
     type: Schema.Types.ObjectId,
     ref: 'XpLog',
     default: []
-  }]
+  }]*/
 });
 
 module.exports = User = mongoose.model("users", UserSchema);
