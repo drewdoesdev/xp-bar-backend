@@ -1,21 +1,31 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
-const XpLogSchema = new Schema({
-    name: [String],
-    xpTableType: [String],
-    xpBars: [XpBarSchema]
-});
-
-const XpBarSchema = new Schema({
-    characterName: [String], 
-    currentXp: [Number],
-    deeds: [DeedSchema]
-})
-
 const DeedSchema = new Schema({
   description: [String],
-  xpRewarded: [Number]
+  xpRewarded: [Number],
+  date: {
+    type: [Date],
+    default: Date.now
+  }
 })
 
-module.exports = XpLog = mongoose.model("xpLogs", XpLogSchema);
+const XpBarSchema = new Schema({
+    name: String,
+    character: Object, //Character schema to be added in 3.0 
+    currentXp: Number,
+    deeds: [DeedSchema]
+});
+
+const XpLogSchema = new Schema({
+  name: String,
+  userId: String,
+  type: String,
+  systemId: String,
+  xpBars: [XpBarSchema]
+});
+
+module.exports = {
+  XpLog: mongoose.model("logs", XpLogSchema),
+  XpBar: mongoose.model("xpBars", XpBarSchema)
+};
