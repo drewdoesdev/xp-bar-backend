@@ -3,6 +3,7 @@ const router = express.Router();
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const keys = require("../../config/keys");
+var ObjectId = require('mongodb').ObjectID;
 
 // Load input validation
 const validateRegisterInput = require("../../validation/register");
@@ -16,7 +17,6 @@ const User = require("../../models/User");
 // @access Public
 router.post("/register", (req, res) => {
     // Form validation
-    console.log(req);
     const { errors, isValid } = validateRegisterInput(req.body);
     // Check validation
     if (!isValid) {
@@ -81,9 +81,13 @@ router.post("/login", (req, res) => {
                         expiresIn: 31556926 // 1 year in seconds
                     },
                     (err, token) => {
+                        console.log(token);
+                        user.token = token;
+                        user.save(err => console.log(err));
                         res.json({
                             success: true,
-                            token: "Bearer " + token
+                            userId: user._id,
+                            token: token
                         });
                     }
                 );
@@ -95,5 +99,25 @@ router.post("/login", (req, res) => {
         });
     });
 });
+
+// @route GET api/users/getAccountInfo
+// @desk Gets account info
+// @access Public
+router.get("/getAccountInfo", (req, res) => {
+    const userId = req.body.userId;
+    const token = req.body.token;
+    console.log("User ID: ", userId);
+    User.find( { "_id": ObjectId(userId) }).then(user => {
+        console.log(user);
+        if(!user) {
+            return res.status(404).json({
+                message: "404: user log not found"
+            })
+        }
+        else {
+            res.json(user);
+        }
+    })
+})
 
 module.exports = router;
