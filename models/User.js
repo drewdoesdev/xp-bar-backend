@@ -18,15 +18,11 @@ const UserSchema = new Schema({
     type: Date,
     default: Date.now
   },
-  token: {
-    type: String,
-    default: ""
-  }
-  /*xpLogs: [{
+  xpLogs: [{
     type: Schema.Types.ObjectId,
-    ref: 'XpLog',
+    ref: 'logs',
     default: []
-  }]*/
+  }]
 });
 
 module.exports = User = mongoose.model("users", UserSchema);

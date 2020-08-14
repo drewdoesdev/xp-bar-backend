@@ -1,50 +1,81 @@
 const express = require("express");
 const router = express.Router();
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-const keys = require("../../config/keys");
 const ObjectId = require('mongodb').ObjectID;
+
+const tables = require("../../xpTables.json");
 
 // Load input validation
 
 // Load Schema
 const Schemas = require("../../models/XpLog");
-const e = require("express");
+const User = require("../../models/User");
+const { response } = require("express");
+
 
 const XpLog = Schemas.XpLog;
 const XpBar = Schemas.XpBar;
+// Load User model
 
 // @route POST api/xplogs/createLog
 // @desc Creates new Xp Log
+// @param {string} startingLevel
+// @param {string} logName
+// @param {string} userId
 // @access Public
 router.post("/createLog", (req, res) => {
-    // Form validation
-    console.log(req.body);
-    const xpBar = new XpBar({
-        name: "",
-        characters: {},
-        currentXp: 0,
-        deeds: []
+    // See if user exists
+    let userId = req.body.userId;
+    User.findOne({ "_id": ObjectId(userId) }).then(user => {
+        if(!user){
+            return res.status(401).json({
+                message: "ERROR: user not found"
+            })
+        }
+        else {
+            // Create and save XP log to xpLog database
+            let sysId = "DND5E";
+            let startingLevelIndex = req.body.startingLevel - 1; 
+            let currentXp = tables[sysId].table[startingLevelIndex].xpFloor;
+            const xpBar = new XpBar({
+                name: "",
+                characters: {},
+                currentXp: currentXp,
+                deeds: []
+            })
+
+            const newXpLog = new XpLog({
+                name: req.body.logName,
+                userId: req.body.userId,
+                type: "party",
+                systemId: sysId,
+                xpBars: [xpBar]
+            });
+
+            newXpLog
+                .save()
+                .then(function(){
+                    console.log(user);
+                    user.xpLogs.push(newXpLog.id)
+                    user
+                        .save()
+                        .then(savedUser => {
+                            console.log(savedUser);
+                            savedUser.populate('xpLogs').execPopulate(function(err, data){
+                                console.log(data);
+                                res.status(200).json(data)
+                            });
+                        })
+                        .catch(err => console.log(err));
+                })
+                .catch(err => console.log(err))
+        }
     })
-
-    const newXpLog = new XpLog({
-        name: req.body.name,
-        userId: req.body.userId,
-        type: "party",
-        systemId: "DND5E",
-        xpBars: [xpBar]
-    });
-
-    newXpLog
-        .save()
-        .then(log => res.status(200).json(log))
-        .catch(err => console.log(err))
 });
 
 // @route GET api/xplogs/getLog
 // @desc Gets xpLog
 // @access Public
-router.get("/getLog", (req, res) => {
+router.post("/getLog", (req, res) => {
     XpLog.find({ "_id": ObjectId(req.body.id) }).then(xpLog => {
         if(!xpLog) {
             return res.status(404).json({

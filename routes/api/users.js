@@ -11,6 +11,9 @@ const validateLoginInput = require("../../validation/login");
 
 // Load User model
 const User = require("../../models/User");
+const Schemas = require("../../models/XpLog");
+const XpLog = Schemas.XpLog;
+const XpBar = Schemas.XpBar;
 
 // @route POST api/users/register
 // @desc Register user
@@ -62,7 +65,7 @@ router.post("/login", (req, res) => {
     User.findOne({ username }).then(user => {
         // Check if user exists
         if (!user) {
-            return res.status(404).json({ usernamenotfound: "Username not found" });
+            return res.status(404).json({ error: "Username not found" });
         }
         // Check password
         bcrypt.compare(password, user.password).then(isMatch => {
@@ -81,12 +84,10 @@ router.post("/login", (req, res) => {
                         expiresIn: 31556926 // 1 year in seconds
                     },
                     (err, token) => {
-                        console.log(token);
-                        user.token = token;
+                        console.log("token", token);
                         user.save(err => console.log(err));
                         res.json({
                             success: true,
-                            userId: user._id,
                             token: token
                         });
                     }
@@ -103,20 +104,11 @@ router.post("/login", (req, res) => {
 // @route GET api/users/getAccountInfo
 // @desk Gets account info
 // @access Public
-router.get("/getAccountInfo", (req, res) => {
+router.post("/getAccountInfo", (req, res) => {
     const userId = req.body.userId;
-    const token = req.body.token;
     console.log("User ID: ", userId);
-    User.find( { "_id": ObjectId(userId) }).then(user => {
-        console.log(user);
-        if(!user) {
-            return res.status(404).json({
-                message: "404: user log not found"
-            })
-        }
-        else {
-            res.json(user);
-        }
+    User.findOne({ "_id": ObjectId(userId) }).populate('xpLogs').exec(function(err, user){
+        res.status(200).send(user);
     })
 })
 
