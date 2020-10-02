@@ -84,7 +84,6 @@ router.post("/login", (req, res) => {
                         expiresIn: 31556926 // 1 year in seconds
                     },
                     (err, token) => {
-                        console.log("token", token);
                         user.save(err => console.log(err));
                         res.json({
                             success: true,
@@ -106,7 +105,6 @@ router.post("/login", (req, res) => {
 // @access Public
 router.post("/getAccountInfo", (req, res) => {
     const userId = req.body.userId;
-    console.log("User ID: ", userId);
     User.findOne({ "_id": ObjectId(userId) }).populate('xpLogs').exec(function(err, user){
         res.status(200).send(user);
     })

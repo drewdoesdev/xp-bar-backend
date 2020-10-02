@@ -3,7 +3,7 @@ const router = express.Router();
 const ObjectId = require('mongodb').ObjectID;
 
 const tables = require("../../xpTables.json");
-
+const xpTools = require("../../services/xpTools");
 // Load input validation
 
 // Load Schema
@@ -11,9 +11,9 @@ const Schemas = require("../../models/XpLog");
 const User = require("../../models/User");
 const { response } = require("express");
 
-
 const XpLog = Schemas.XpLog;
 const XpBar = Schemas.XpBar;
+const Deed = Schemas.Deed;
 // Load User model
 
 // @route POST api/xplogs/createLog
@@ -36,11 +36,16 @@ router.post("/createLog", (req, res) => {
             let sysId = "DND5E";
             let startingLevelIndex = req.body.startingLevel - 1; 
             let currentXp = tables[sysId].table[startingLevelIndex].xpFloor;
+
+            const startingDeed = new Deed({
+                description: "Starting XP",
+                xpRewarded: currentXp,
+            })
             const xpBar = new XpBar({
                 name: "",
                 characters: {},
                 currentXp: currentXp,
-                deeds: []
+                deeds: [startingDeed]
             })
 
             const newXpLog = new XpLog({
@@ -54,12 +59,10 @@ router.post("/createLog", (req, res) => {
             newXpLog
                 .save()
                 .then(function(){
-                    console.log(user);
                     user.xpLogs.push(newXpLog.id)
                     user
                         .save()
                         .then(savedUser => {
-                            console.log(savedUser);
                             savedUser.populate('xpLogs').execPopulate(function(err, data){
                                 console.log(data);
                                 res.status(200).json(data)
@@ -76,17 +79,23 @@ router.post("/createLog", (req, res) => {
 // @desc Gets xpLog
 // @access Public
 router.post("/getLog", (req, res) => {
-    XpLog.find({ "_id": ObjectId(req.body.id) }).then(xpLog => {
+    XpLog.find({ "_id": ObjectId(req.body.id) }).lean().then(xpLog => {
         if(!xpLog) {
             return res.status(404).json({
                 message: "404: xp log not found"
             })
         }
         else {
-            const payload = xpLog; //Return everything for now.  No formatting need
-            res.json({
-                xpLog: payload
-            })
+            let log = xpLog[0];
+            let sysId = log.systemId;
+            //let currentXp = xpLog
+            console.log(log);
+            log.xpBars[0].currentLevel = xpTools.getCurrentLevel(tables[sysId].table, log.xpBars[0].currentXp);
+            const data = {
+                xpLog: log,
+                table: tables[sysId]
+            }
+            res.status(200).json(data);
         }
     })
 });
@@ -103,10 +112,52 @@ router.post("/deleteLog", (req, res) => {
         }
         else {
             res.json({
-                message: "Log " + req.body.id + " removed successfully"
+                message: "Log " + req.body.id + " removed successfully",
+                data: xpLog
             })
         }
     });
 });
+
+/*
+* Name: addDeed
+* Description: Given a log ID, this endpoint adds a deed to the user's log
+*              and updates the currentXP total.
+* 
+*/
+router.post("/addDeed", (req, res) => {
+    // Find current XP log
+    XpLog.findOne({ "_id": ObjectId(req.body.id) }).then(xpLog => {
+        if(!xpLog) {
+            return res.status(404).json({
+                message: "404: xp log not found"
+            })
+        }
+        else {
+
+            var xpRewarded = Number(req.body.xp);
+
+            let newDeed = new Deed({
+                description: req.body.description,
+                xpRewarded: xpRewarded
+            });
+
+            // Add new deed then sort
+            xpLog.xpBars[0].deeds.push(newDeed);
+            xpLog.xpBars[0].deeds.sort(function(a, b){
+                return new Date(b.date) - new Date(a.date);
+            });
+
+            // Update currentXp
+            xpLog.xpBars[0].currentXp += xpRewarded;
+            xpLog
+                .save()
+                .then(savedLog => {
+                    res.status(200).json(savedLog)
+                })
+                .catch(err => console.log(err));
+        }
+    })
+})
 
 module.exports = router;

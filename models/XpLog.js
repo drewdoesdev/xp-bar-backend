@@ -2,10 +2,10 @@ const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
 const DeedSchema = new Schema({
-  description: [String],
-  xpRewarded: [Number],
+  description: String,
+  xpRewarded: Number,
   date: {
-    type: [Date],
+    type: Date,
     default: Date.now
   }
 })
@@ -14,6 +14,7 @@ const XpBarSchema = new Schema({
     name: String,
     character: Object, //Character schema to be added in 3.0 
     currentXp: Number,
+    currentLevel: Number,
     deeds: [DeedSchema]
 });
 
@@ -27,5 +28,6 @@ const XpLogSchema = new Schema({
 
 module.exports = {
   XpLog: mongoose.model("logs", XpLogSchema),
-  XpBar: mongoose.model("xpBars", XpBarSchema)
+  XpBar: mongoose.model("xpBars", XpBarSchema),
+  Deed: mongoose.model("deed", DeedSchema)
 };
