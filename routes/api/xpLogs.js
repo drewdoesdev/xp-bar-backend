@@ -35,7 +35,12 @@ router.post("/createLog", (req, res) => {
             // Create and save XP log to xpLog database
             let sysId = "DND5E";
             let startingLevelIndex = req.body.startingLevel - 1; 
-            let currentXp = tables[sysId].table[startingLevelIndex].xpFloor;
+            let currentXp = Number(tables[sysId].table[startingLevelIndex].xpFloor);
+            let currentLevelData = xpTools.getCurrentLevel(tables[sysId].table, currentXp);
+            currentLevel = Number(currentLevelData.level);
+
+
+            console.log(currentXp, currentLevel);
 
             const startingDeed = new Deed({
                 description: "Starting XP",
@@ -45,6 +50,7 @@ router.post("/createLog", (req, res) => {
                 name: "",
                 characters: {},
                 currentXp: currentXp,
+                currentLevel: currentLevel,
                 deeds: [startingDeed]
             })
 
@@ -90,7 +96,6 @@ router.post("/getLog", (req, res) => {
             let sysId = log.systemId;
             //let currentXp = xpLog
             console.log(log);
-            log.xpBars[0].currentLevel = xpTools.getCurrentLevel(tables[sysId].table, log.xpBars[0].currentXp);
             const data = {
                 xpLog: log,
                 table: tables[sysId]
@@ -141,6 +146,7 @@ router.post("/addDeed", (req, res) => {
                 description: req.body.description,
                 xpRewarded: xpRewarded
             });
+            let sysId = xpLog.systemId;
 
             // Add new deed then sort
             xpLog.xpBars[0].deeds.push(newDeed);
@@ -150,14 +156,58 @@ router.post("/addDeed", (req, res) => {
 
             // Update currentXp
             xpLog.xpBars[0].currentXp += xpRewarded;
+
+            // Update current level
+            let currentLevelData = xpTools.getCurrentLevel(tables[sysId].table, xpLog.xpBars[0].currentXp);
+            xpLog.xpBars[0].currentLevel = Number(currentLevelData.level);
             xpLog
                 .save()
-                .then(savedLog => {
-                    res.status(200).json(savedLog)
+                .then(() => {
+                    console.log();
+                    res.status(200).json(xpLog);
                 })
                 .catch(err => console.log(err));
         }
     })
+})
+
+router.post("/removeDeed", (req, res) => {
+    // Find current XP log
+    var query = { 
+        "_id": ObjectId(req.body.logId)
+    }
+    var update = {
+        "$pull": {
+            "xpBars.0.deeds": {
+                "_id": ObjectId(req.body.deedId)
+            }
+        }
+    } 
+
+    XpLog.findOneAndUpdate(query, update, {new: true}, function(err, xpLog){
+        if(err){
+            res.status(500).json(err);
+        }
+        else {
+            // Get current XP
+            let currentXp = 0;
+            xpLog.xpBars[0].deeds.forEach(deed =>{
+                currentXp += deed.xpRewarded;
+            })
+            xpLog.xpBars[0].currentXp = currentXp;
+
+            // Get Current Level
+            let sysId = xpLog.systemId;
+            let currentLevelData = xpTools.getCurrentLevel(tables[sysId].table, xpLog.xpBars[0].currentXp);
+            xpLog.xpBars[0].currentLevel = Number(currentLevelData.level);
+
+            xpLog.save()
+            .then(xpLog => {
+                res.status(200).json(xpLog);
+            })
+            .catch(err => console.log(err));
+        }
+    });
 })
 
 module.exports = router;
