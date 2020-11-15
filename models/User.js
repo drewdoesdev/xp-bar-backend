@@ -16,13 +16,13 @@ const UserSchema = new Schema({
   },
   date: {
     type: Date,
-    default: Date.now
-  }
-  /*xpLogs: [{
+    default: Date.now()
+  },
+  xpLogs: [{
     type: Schema.Types.ObjectId,
-    ref: 'XpLog',
+    ref: 'logs',
     default: []
-  }]*/
+  }]
 });
 
 module.exports = User = mongoose.model("users", UserSchema);
