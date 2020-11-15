@@ -68,7 +68,6 @@ router.post("/createLog", (req, res) => {
                         .save()
                         .then(savedUser => {
                             savedUser.populate('xpLogs').execPopulate(function(err, data){
-                                console.log(data);
                                 res.status(200).json(data)
                             });
                         })
