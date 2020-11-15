@@ -27,9 +27,10 @@ router.post("/createLog", (req, res) => {
     let userId = req.body.userId;
     User.findOne({ "_id": ObjectId(userId) }).then(user => {
         if(!user){
-            return res.status(401).json({
-                message: "ERROR: user not found"
-            })
+            const response = {
+                Errors: ["User associated with this log could not be found.  Please try again."]
+            }
+            return res.status(200).json(response);
         }
         else {
             // Create and save XP log to xpLog database
@@ -38,9 +39,6 @@ router.post("/createLog", (req, res) => {
             let currentXp = Number(tables[sysId].table[startingLevelIndex].xpFloor);
             let currentLevelData = xpTools.getCurrentLevel(tables[sysId].table, currentXp);
             currentLevel = Number(currentLevelData.level);
-
-
-            console.log(currentXp, currentLevel);
 
             const startingDeed = new Deed({
                 description: "Starting XP",
@@ -74,9 +72,19 @@ router.post("/createLog", (req, res) => {
                                 res.status(200).json(data)
                             });
                         })
-                        .catch(err => console.log(err));
+                        .catch(err => {
+                            const response = {
+                                Errors: [err]
+                            }
+                            res.status(200).json(response)
+                        });
                 })
-                .catch(err => console.log(err))
+                .catch(err => {
+                    const response = {
+                        Errors: [err]
+                    }
+                    res.status(200).json(response)
+                })
         }
     })
 });
@@ -87,15 +95,15 @@ router.post("/createLog", (req, res) => {
 router.post("/getLog", (req, res) => {
     XpLog.find({ "_id": ObjectId(req.body.id) }).lean().then(xpLog => {
         if(!xpLog) {
-            return res.status(404).json({
-                message: "404: xp log not found"
-            })
+            const response = {
+                Errors: ["Sorry, that log could not be found in our system.  Please try again."]
+            }
+            return res.status(200).json(response);
         }
         else {
             let log = xpLog[0];
             let sysId = log.systemId;
-            //let currentXp = xpLog
-            console.log(log);
+
             const data = {
                 xpLog: log,
                 table: tables[sysId]
@@ -111,15 +119,16 @@ router.post("/getLog", (req, res) => {
 router.post("/deleteLog", (req, res) => {
     XpLog.deleteOne({"_id": ObjectId(req.body.id) }).then(xpLog => {
         if(!xpLog) {
-            return res.status(404).json({
-                message: "404: xp log not found"
-            })
+            const response = {
+                Errors: ["There was an error removing your XP Log.  Please try again later."]
+            }
+            res.status(200).json(response);
         }
         else {
-            res.json({
-                message: "Log " + req.body.id + " removed successfully",
-                data: xpLog
-            })
+            const response = {
+                Success: ["Log was removed successfully!."]
+            }
+            return res.status(200).json(response);
         }
     });
 });
@@ -134,9 +143,10 @@ router.post("/addDeed", (req, res) => {
     // Find current XP log
     XpLog.findOne({ "_id": ObjectId(req.body.id) }).then(xpLog => {
         if(!xpLog) {
-            return res.status(404).json({
-                message: "404: xp log not found"
-            })
+            const response = {
+                Errors: ["There was an error removing your XP Log.  Please try again later."]
+            }
+            res.status(200).json(response)
         }
         else {
 
@@ -159,14 +169,20 @@ router.post("/addDeed", (req, res) => {
 
             // Update current level
             let currentLevelData = xpTools.getCurrentLevel(tables[sysId].table, xpLog.xpBars[0].currentXp);
+            console.log(currentLevelData);
             xpLog.xpBars[0].currentLevel = Number(currentLevelData.level);
             xpLog
                 .save()
                 .then(() => {
-                    console.log();
                     res.status(200).json(xpLog);
                 })
-                .catch(err => console.log(err));
+                .catch(err => {
+                    console.log(err);
+                    const response = {
+                        Errors: ["The server rolled a natural 1.  Please try again later."]
+                    }
+                    res.status(200).json(response)
+                });
         }
     })
 })
@@ -205,7 +221,13 @@ router.post("/removeDeed", (req, res) => {
             .then(xpLog => {
                 res.status(200).json(xpLog);
             })
-            .catch(err => console.log(err));
+            .catch(err => {
+                console.log(err);
+                const response = {
+                    Errors: ["The server rolled a natural 1.  Please try again later."]
+                }
+                res.status(200).json(response)
+            });
         }
     });
 })

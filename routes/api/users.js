@@ -23,11 +23,26 @@ router.post("/register", (req, res) => {
     const { errors, isValid } = validateRegisterInput(req.body);
     // Check validation
     if (!isValid) {
-        return res.status(400).json(errors);
+        const response = {
+            Errors: [errors]
+        }
+        return res.status(200).json(response);
     }
-    User.findOne({ email: req.body.email }).then(user => {
+
+    const query = {
+        $or:[{
+            email: req.body.email
+        }, 
+        {
+            username: req.body.username
+        }]
+    }
+    User.findOne(query).then(user => {
         if (user) {
-            return res.status(400).json({ email: "Email already exists" });
+            const response = {
+                Errors: ["Sorry, that username or email was already found in our system."]
+            }
+            return res.status(200).json(response);
         } else {
             const newUser = new User({
                 username: req.body.username,
@@ -42,7 +57,9 @@ router.post("/register", (req, res) => {
                     newUser
                         .save()
                         .then(user => res.status(200).json(user))
-                        .catch(err => console.log(err));
+                        .catch(err => {
+                             
+                        });
                 });
             });
         }
@@ -57,7 +74,10 @@ router.post("/login", (req, res) => {
     const { errors, isValid } = validateLoginInput(req.body);
     // Check validation
     if (!isValid) {
-        return res.status(400).json(errors);
+        const response = {
+            Errors: [errors]
+        }
+        return res.status(200).json(response);
     }
     const username = req.body.username
     const password = req.body.password;
@@ -65,7 +85,10 @@ router.post("/login", (req, res) => {
     User.findOne({ username }).then(user => {
         // Check if user exists
         if (!user) {
-            return res.status(404).json({ error: "Username not found" });
+            const response = {
+                Errors: ["Sorry, that username/ password combination is incorrect.  Please check your credentials and try again."]
+            }
+            return res.status(200).json(response);
         }
         // Check password
         bcrypt.compare(password, user.password).then(isMatch => {
@@ -92,9 +115,10 @@ router.post("/login", (req, res) => {
                     }
                 );
             } else {
-                return res
-                    .status(400)
-                    .json({ passwordincorrect: "Password incorrect" });
+                const response = {
+                    Errors: ["Sorry, that username/ password combination is incorrect.  Please check your credentials and try again."]
+                }
+                return res.status(200).json(response);
             }
         });
     });
