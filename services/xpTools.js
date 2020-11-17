@@ -1,5 +1,3 @@
-var tables = require("../xpTables.json");
-
 const getCurrentLevel = (table, currentXp) => {
     const xp = Math.abs(currentXp);
     const tableEnd = table.length - 1;
