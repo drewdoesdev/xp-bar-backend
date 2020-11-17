@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const keys = require("../../config/keys");
+const keys = process.env.KEY || require("../../config/keys");
 var ObjectId = require('mongodb').ObjectID;
 
 // Load input validation
