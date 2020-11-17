@@ -16,7 +16,7 @@ app.use(
 app.use(bodyParser.json());
 
 // DB Config
-const db = require("./config/keys").mongoURI;
+const db = process.env.DB_URL || require("./config/keys").mongoURI;
 
 // Connect to MongoDB
 mongoose
@@ -31,7 +31,7 @@ mongoose
 app.use(passport.initialize());
 
 // Passport config
-require("./config/passport")(passport);
+require("./services/passport")(passport);
 
 // Routes
 app.use("/api/users", users);
