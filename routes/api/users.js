@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const keys = process.env.KEY || require("../../config/keys");
+const key = process.env.KEY;
 var ObjectId = require('mongodb').ObjectID;
 
 // Load input validation
@@ -97,12 +97,12 @@ router.post("/login", (req, res) => {
                 // Create JWT Payload
                 const payload = {
                     id: user.id,
-                    name: user.name
+                    name: user.username
                 };
                 // Sign token
                 jwt.sign(
                     payload,
-                    keys.secretOrKey,
+                    key,
                     {
                         expiresIn: 31556926 // 1 year in seconds
                     },
